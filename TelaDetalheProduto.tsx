@@ -32,7 +32,7 @@ const styles = StyleSheet.create({
   },
   imagem: {
     width: '100%',
-    height: 220,
+    aspectRatio: 4 / 3,
     borderRadius: 8,
     marginBottom: 16,
   },

@@ -121,31 +121,33 @@ function TelaListaProdutos({ navigation, produtos, onAdicionarProduto }: Props) 
           onSubmitEditing={() => inputPrecoRef.current?.focus()}
         />
 
-        <TextInput
-          ref={inputPrecoRef}
-          style={styles.input}
-          placeholder="Preço"
-          value={preco}
-          onChangeText={setPreco}
-          keyboardType="decimal-pad"
-          returnKeyType="next"
-          onSubmitEditing={() => inputQuantidadeRef.current?.focus()}
-        />
+        <View style={styles.linhaFormulario}>
+          <TextInput
+            ref={inputPrecoRef}
+            style={[styles.input, styles.inputMetade]}
+            placeholder="Preço"
+            value={preco}
+            onChangeText={setPreco}
+            keyboardType="decimal-pad"
+            returnKeyType="next"
+            onSubmitEditing={() => inputQuantidadeRef.current?.focus()}
+          />
 
-        <TextInput
-          ref={inputQuantidadeRef}
-          style={styles.input}
-          placeholder="Quantidade em estoque"
-          value={quantidade}
-          onChangeText={setQuantidade}
-          keyboardType="number-pad"
-          returnKeyType="next"
-          onSubmitEditing={() => inputDescricaoRef.current?.focus()}
-        />
+          <TextInput
+            ref={inputQuantidadeRef}
+            style={[styles.input, styles.inputMetade]}
+            placeholder="Qtd."
+            value={quantidade}
+            onChangeText={setQuantidade}
+            keyboardType="number-pad"
+            returnKeyType="next"
+            onSubmitEditing={() => inputDescricaoRef.current?.focus()}
+          />
+        </View>
 
         <TextInput
           ref={inputDescricaoRef}
-          style={[styles.input, { minHeight: 80, textAlignVertical: 'top' }]} // Deixamos o campo mais alto
+          style={[styles.input, { minHeight: 80, textAlignVertical: 'top' }]}
           placeholder="Descrição do produto (opcional)"
           value={descricao}
           onChangeText={setDescricao}
@@ -197,7 +199,15 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#CCCCCC',
     borderRadius: 8,
-    padding: 10
+    padding: 10,
+    minHeight: 44
+  },
+  linhaFormulario: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  inputMetade: {
+    flex: 1,
   },
   erro: {
     color: '#C62828',
@@ -218,10 +228,11 @@ const styles = StyleSheet.create({
   },
   botaoSalvar: {
     backgroundColor: '#007AFF',
-    paddingVertical: 14,
     borderRadius: 8,
+    padding: 12,
+    minHeight: 44,
+    justifyContent: 'center',
     alignItems: 'center',
-    marginTop: 8,
   },
   textoBotaoSalvar: {
     color: '#FFFFFF',
