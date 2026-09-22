@@ -1,5 +1,6 @@
-import { useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Keyboard, TextInput, TouchableOpacity, Text, View, FlatList, StyleSheet } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { RootStackParamList } from './App';
 
@@ -44,12 +45,57 @@ type Props = NativeStackScreenProps<RootStackParamList, 'ListaProdutos'> & {
   onAdicionarProduto: (produto: Produto) => void;
 };
 
+const CHAVE_FAVORITOS = '@compre_bem:favoritos';
+const CHAVE_BUSCA = '@compre_bem:ultima_busca';
+
 function TelaListaProdutos({ navigation, produtos, onAdicionarProduto }: Props) {
+  const [favoritos, setFavoritos] = useState<number[]>([]);
   const [busca, setBusca] = useState('');
-  const produtosFiltrados = useMemo(
-    () => produtos.filter((item) => item.nome.toLowerCase().includes(busca.toLowerCase())),
-    [produtos, busca]
-  );
+
+  useEffect(() => {
+    AsyncStorage.getItem(CHAVE_FAVORITOS).then((salvo) => {
+      if (salvo) {
+        try {
+          const arrayParseado = JSON.parse(salvo);
+          if (Array.isArray(arrayParseado)) {
+            setFavoritos(arrayParseado);
+          }
+        } catch (e) {
+          console.error("Erro ao ler favoritos do AsyncStorage", e);
+        }
+      }
+    });
+
+    AsyncStorage.getItem(CHAVE_BUSCA).then((salvo) => {
+      if (salvo !== null) setBusca(salvo);
+    });
+  }, []);
+
+  function alternarFavorito(id: number) {
+    setFavoritos((atual) => {
+      const listaAtual = Array.isArray(atual) ? atual : [];
+      const novo = listaAtual.includes(id)
+        ? listaAtual.filter((favId) => favId !== id)
+        : [...listaAtual, id];
+
+      AsyncStorage.setItem(CHAVE_FAVORITOS, JSON.stringify(novo));
+      return novo;
+    });
+  }
+
+  function atualizarBusca(texto: string) {
+    setBusca(texto);
+    AsyncStorage.setItem(CHAVE_BUSCA, texto);
+  }
+
+  const produtosFiltrados = useMemo(() => {
+    const listaSegura = produtos || [];
+    const termoBusca = busca || '';
+
+    return listaSegura.filter((item) =>
+      item.nome.toLowerCase().includes(termoBusca.toLowerCase())
+    );
+  }, [produtos, busca]);
 
   const [nome, setNome] = useState('');
   const [preco, setPreco] = useState('');
@@ -74,14 +120,14 @@ function TelaListaProdutos({ navigation, produtos, onAdicionarProduto }: Props) 
     }
 
     const quantidadeNumerica = Number(quantidade.trim());
-      if (
-        quantidade.trim() === '' ||
-        isNaN(quantidadeNumerica) ||
-        quantidadeNumerica < 0 ||
-        !Number.isInteger(quantidadeNumerica)
-      ) {
-        setErro('A quantidade em estoque deve ser um número inteiro!');
-        return;
+    if (
+      quantidade.trim() === '' ||
+      isNaN(quantidadeNumerica) ||
+      quantidadeNumerica < 0 ||
+      !Number.isInteger(quantidadeNumerica)
+    ) {
+      setErro('A quantidade em estoque deve ser um número inteiro!');
+      return;
     }
 
     onAdicionarProduto({
@@ -103,13 +149,12 @@ function TelaListaProdutos({ navigation, produtos, onAdicionarProduto }: Props) 
 
   return (
     <View style={styles.container}>
-
       <View style={styles.cadastro}>
         <TextInput
           style={styles.inputBusca}
           placeholder="Buscar produto..."
           value={busca}
-          onChangeText={setBusca}
+          onChangeText={atualizarBusca}
         />
 
         <TextInput
@@ -164,14 +209,20 @@ function TelaListaProdutos({ navigation, produtos, onAdicionarProduto }: Props) 
         data={produtosFiltrados}
         keyExtractor={(item) => String(item.id)}
         renderItem={({ item }) => (
-          <TouchableOpacity
-            style={styles.item}
-            onPress={() => navigation.navigate('DetalheProduto', { produto: item })}
-          >
-            <Text style={styles.nome}>{item.nome}</Text>
-            <Text style={styles.preco}>{item.preco}</Text>
-            <Text style={{ fontSize: 12, color: '#666' }}>Estoque: {item.quantidade} unidades</Text>
-          </TouchableOpacity>
+          <View style={styles.itemContainer}>
+            <TouchableOpacity
+              style={styles.itemConteudo}
+              onPress={() => navigation.navigate('DetalheProduto', { produto: item })}
+            >
+              <Text style={styles.nome}>{item.nome}</Text>
+              <Text style={styles.preco}>{item.preco}</Text>
+              <Text style={{ fontSize: 12, color: '#666' }}>Estoque: {item.quantidade} unidades</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity style={styles.botaoFavorito} onPress={() => alternarFavorito(item.id)}>
+              <Text style={styles.favoritoTexto}>{favoritos.includes(item.id) ? '★' : '☆'}</Text>
+            </TouchableOpacity>
+          </View>
         )}
       />
     </View>
@@ -213,10 +264,15 @@ const styles = StyleSheet.create({
     color: '#C62828',
     fontWeight: '500'
   },
-  item: {
+  itemContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
     padding: 16,
     borderBottomWidth: 1,
     borderBottomColor: '#EEE'
+  },
+  itemConteudo: {
+    flex: 1,
   },
   nome: {
     fontSize: 16,
@@ -238,6 +294,16 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontWeight: 'bold',
     fontSize: 16,
+  },
+  botaoFavorito: {
+    minWidth: 44,
+    minHeight: 44,
+    alignItems: 'center',
+    justifyContent: 'center'
+  },
+  favoritoTexto: {
+    fontSize: 22,
+    color: '#C62828'
   },
 });
 
